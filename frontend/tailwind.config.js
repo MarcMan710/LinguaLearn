@@ -1,9 +1,9 @@
 /** @type {import('tailwindcss').Config} */
-export default {
+module.exports = {
   content: [
-    "./index.html",
-    "./src/**/*.{js,ts,jsx,tsx}",
+    "./src/**/*.{js,jsx,ts,tsx}",
   ],
+  darkMode: 'class',
   theme: {
     extend: {
       colors: {
@@ -19,12 +19,31 @@ export default {
           800: '#075985',
           900: '#0c4a6e',
         },
+        'hc-text': '#000000',
+        'hc-bg': '#FFFFFF',
+        'hc-link': '#0000EE',
+        'hc-visited': '#551A8B',
+        'hc-focus': '#FF0000',
       },
       fontFamily: {
         sans: ['Inter', 'sans-serif'],
       },
+      animation: {
+        'none': 'none',
+      },
+      transitionProperty: {
+        'none': 'none',
+      },
     },
   },
   plugins: [],
-}
+  variants: {
+    extend: {
+      backgroundColor: ['dark', 'high-contrast'],
+      textColor: ['dark', 'high-contrast'],
+      borderColor: ['dark', 'high-contrast'],
+      ringColor: ['dark', 'high-contrast'],
+    },
+  },
+};
 

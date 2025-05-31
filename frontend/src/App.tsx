@@ -1,60 +1,54 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
-import Navbar from './components/Navbar'
-import Hero from './components/Hero'
-import CourseCard from './components/CourseCard'
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { ThemeProvider } from './contexts/ThemeContext';
+import Navigation from './components/Navigation';
+import Home from './components/Home';
+import Courses from './components/Courses';
+import Profile from './components/Profile';
+import NotificationCenter from './components/notifications/NotificationCenter';
+import AccessibilitySettings from './components/accessibility/AccessibilitySettings';
+import './styles/accessibility.css';
 
-const courses = [
-  {
-    title: 'Spanish for Beginners',
-    description: 'Start your journey to fluency in Spanish with our comprehensive beginner course.',
-    level: 'Beginner',
-    lessons: 24,
-    imageUrl: 'https://images.unsplash.com/photo-1546410531-bb4caa6b424d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2071&q=80',
-  },
-  {
-    title: 'French Intermediate',
-    description: 'Take your French to the next level with advanced grammar and conversation practice.',
-    level: 'Intermediate',
-    lessons: 32,
-    imageUrl: 'https://images.unsplash.com/photo-1546410531-bb4caa6b424d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2071&q=80',
-  },
-  {
-    title: 'Japanese Essentials',
-    description: 'Learn the fundamentals of Japanese language and culture.',
-    level: 'Beginner',
-    lessons: 28,
-    imageUrl: 'https://images.unsplash.com/photo-1546410531-bb4caa6b424d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2071&q=80',
-  },
-];
-
-function App() {
+const App: React.FC = () => {
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar />
-      <Hero />
-      
-      {/* Courses Section */}
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16">
-        <div className="text-center">
-          <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
-            Popular Courses
-          </h2>
-          <p className="mt-4 text-lg text-gray-500">
-            Choose from our wide range of language courses designed for all levels
-          </p>
+    <ThemeProvider>
+      <Router>
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+          <a href="#main-content" className="skip-link sr-only focus:not-sr-only">
+            Skip to main content
+          </a>
+          
+          <Navigation />
+          
+          <main id="main-content" className="container mx-auto px-4 py-8">
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/courses" element={<Courses />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/notifications" element={<NotificationCenter />} />
+              <Route path="/accessibility" element={<AccessibilitySettings />} />
+            </Routes>
+          </main>
+          
+          <footer className="bg-white dark:bg-gray-800 shadow-lg mt-8">
+            <div className="container mx-auto px-4 py-6">
+              <div className="flex justify-between items-center">
+                <p className="text-gray-600 dark:text-gray-300">
+                  © 2024 LinguaLearn. All rights reserved.
+                </p>
+                <a
+                  href="/accessibility"
+                  className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                >
+                  Accessibility Settings
+                </a>
+              </div>
+            </div>
+          </footer>
         </div>
+      </Router>
+    </ThemeProvider>
+  );
+};
 
-        <div className="mt-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-          {courses.map((course) => (
-            <CourseCard key={course.title} {...course} />
-          ))}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-export default App
+export default App;

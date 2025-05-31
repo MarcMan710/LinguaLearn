@@ -1,0 +1,167 @@
+/* High Contrast Mode */
+.high-contrast {
+  --hc-text: #000000;
+  --hc-bg: #FFFFFF;
+  --hc-link: #0000EE;
+  --hc-visited: #551A8B;
+  --hc-focus: #FF0000;
+}
+
+.high-contrast * {
+  color: var(--hc-text) !important;
+  background-color: var(--hc-bg) !important;
+  border-color: var(--hc-text) !important;
+}
+
+.high-contrast a {
+  color: var(--hc-link) !important;
+}
+
+.high-contrast a:visited {
+  color: var(--hc-visited) !important;
+}
+
+.high-contrast *:focus {
+  outline: 2px solid var(--hc-focus) !important;
+  outline-offset: 2px !important;
+}
+
+/* Reduced Motion */
+.reduced-motion * {
+  animation: none !important;
+  transition: none !important;
+}
+
+/* Focus Styles */
+*:focus-visible {
+  outline: 2px solid #3B82F6;
+  outline-offset: 2px;
+}
+
+/* Skip Link */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: #3B82F6;
+  color: white;
+  padding: 8px;
+  z-index: 100;
+  transition: top 0.2s;
+}
+
+.skip-link:focus {
+  top: 0;
+}
+
+/* Screen Reader Only */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Font Size Adjustments */
+.text-size-adjust {
+  font-size: var(--font-size, 16px);
+}
+
+/* Dark Mode */
+.dark {
+  color-scheme: dark;
+}
+
+/* Focus Ring */
+.focus-ring {
+  @apply focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2;
+}
+
+/* Button States */
+.button-states {
+  @apply hover:bg-opacity-90 active:bg-opacity-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2;
+}
+
+/* Form Controls */
+.form-control {
+  @apply focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500;
+}
+
+/* Links */
+.accessible-link {
+  @apply text-blue-600 hover:text-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2;
+}
+
+/* Images */
+.accessible-image {
+  @apply max-w-full h-auto;
+}
+
+/* Tables */
+.accessible-table {
+  @apply w-full border-collapse;
+}
+
+.accessible-table th {
+  @apply text-left bg-gray-100 dark:bg-gray-700;
+}
+
+.accessible-table td,
+.accessible-table th {
+  @apply p-2 border border-gray-200 dark:border-gray-600;
+}
+
+/* Lists */
+.accessible-list {
+  @apply list-disc pl-5 space-y-1;
+}
+
+/* Headings */
+.accessible-heading {
+  @apply font-bold text-gray-900 dark:text-white;
+}
+
+/* Paragraphs */
+.accessible-paragraph {
+  @apply text-gray-600 dark:text-gray-300;
+}
+
+/* Cards */
+.accessible-card {
+  @apply bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4;
+}
+
+/* Navigation */
+.accessible-nav {
+  @apply space-x-4;
+}
+
+.accessible-nav-link {
+  @apply text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2;
+}
+
+/* Alerts */
+.accessible-alert {
+  @apply p-4 rounded-lg border border-transparent;
+}
+
+.accessible-alert-info {
+  @apply bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-100;
+}
+
+.accessible-alert-success {
+  @apply bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-100;
+}
+
+.accessible-alert-warning {
+  @apply bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-100;
+}
+
+.accessible-alert-error {
+  @apply bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-100;
+} 
