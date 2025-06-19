@@ -95,6 +95,24 @@ class UserProgress(models.Model):
     def __str__(self):
         return f"{self.user.username} - {self.lesson.title}"
 
+    def mark_as_complete(self):
+        self.completed = True
+        self.score = 100 # Assuming 100 for completion, adjust if variable
+        # last_attempted is auto_now=True, so it will be updated on save.
+        # However, explicitly including it in update_fields is fine if we want to be very specific.
+        self.save(update_fields=['completed', 'score', 'last_attempted'])
+
+    def update_score(self, new_score):
+        self.score = max(self.score, int(new_score)) # Ensures score doesn't decrease, and new_score is int
+        # self.completed can be set here if a certain score means completion, e.g.
+        # if self.score >= 100: # Assuming 100 is max score and means completion
+        #     self.completed = True
+        #     self.save(update_fields=['score', 'completed', 'last_attempted'])
+        # else:
+        #     self.save(update_fields=['score', 'last_attempted'])
+        # For now, keeping it simple as per the prompt, only updating score.
+        self.save(update_fields=['score', 'last_attempted'])
+
 class PronunciationExercise(models.Model):
     lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE, related_name='pronunciation_exercises')
     word = models.CharField(max_length=100)
@@ -134,20 +152,84 @@ class UserXP(models.Model):
     def __str__(self):
         return f"{self.user.username} - Level {self.level}"
 
-    def add_xp(self, amount):
+    def add_xp(self, amount, is_recursive_call=False):
         self.total_xp += amount
-        # Level up logic: 1000 XP per level
-        self.level = (self.total_xp // 1000) + 1
-        self.save()
+        new_level = (self.total_xp // 1000) + 1  # Calculate new level first
+
+        level_up_occurred = False
+        if new_level > self.level:
+            level_up_occurred = True
+
+        self.level = new_level
+        # Removed self.save() here, will be called once after all modifications in this method.
+
+        if not is_recursive_call:
+            self.update_streak() # Call update_streak for primary XP gains.
+
+        self.save() # Save after all modifications including level and streak.
+
+        if not is_recursive_call:
+            # Pass the flag indicating if a level up happened specifically in *this* call to add_xp
+            self._check_achievements(level_up_occurred_during_this_add_xp=level_up_occurred)
+
+    def _try_award_achievement(self, achievement_type, xp_reward):
+        """
+        Tries to award an achievement to the user.
+        If the achievement is newly awarded, adds XP.
+        """
+        achievement, created = UserAchievement.objects.get_or_create(
+            user=self.user,
+            type=achievement_type,
+            defaults={'xp_reward': xp_reward}
+        )
+        if created:
+            # Call add_xp recursively, ensuring it doesn't trigger another achievement check cycle for this specific XP gain.
+            self.add_xp(xp_reward, is_recursive_call=True)
+            # One might also create a Notification here if achievements should notify users.
+            # Notification.objects.create(user=self.user, type='ACHIEVEMENT', title=f"Achievement Unlocked: {achievement_type}", message=f"You earned {xp_reward} XP!")
+
+    def _check_achievements(self, level_up_occurred_during_this_add_xp=False):
+        """
+        Checks and awards achievements based on user's XP, level, and streak.
+        `level_up_occurred_during_this_add_xp` is True if a level up happened in the current add_xp call.
+        """
+        # Level up achievement
+        # This specifically checks if the level up was due to the most recent XP gain.
+        if level_up_occurred_during_this_add_xp:
+            self._try_award_achievement('LEVEL_UP', 200) # XP reward for leveling up
+
+        # Streak achievements
+        # These are typically checked when streak is updated, but can also be checked here.
+        # Ensure streak_days is up-to-date before these checks if called from places other than update_streak.
+        if self.streak_days == 3:
+            self._try_award_achievement('STREAK_3', 100)
+        elif self.streak_days == 7:
+            self._try_award_achievement('STREAK_7', 300)
+        elif self.streak_days == 30: # As per the view logic
+            self._try_award_achievement('STREAK_30', 1000)
+
+        # Example: Perfect score achievement (if applicable, might need more context)
+        # if some_condition_for_perfect_score:
+        # self._try_award_achievement('PERFECT_SCORE', 50)
+
+        # Example: Lesson complete achievement (usually triggered elsewhere, e.g., after a lesson is completed)
+        # if number_of_lessons_completed == 1:
+        # self._try_award_achievement('LESSON_COMPLETE', 50)
+
 
     def update_streak(self):
         today = timezone.now().date()
-        if self.last_activity_date < today - timedelta(days=1):
-            self.streak_days = 1
-        else:
-            self.streak_days += 1
+        if self.last_activity_date is None or self.last_activity_date < today - timedelta(days=1):
+            self.streak_days = 1  # Start or reset streak
+        elif self.last_activity_date == today - timedelta(days=1):
+            self.streak_days += 1 # Increment streak
+        # If last_activity_date is today, streak_days should not change here.
+        # It implies multiple activities in the same day.
+
         self.last_activity_date = today
-        self.save()
+        # Removed self.save() from here, it will be called in add_xp or if update_streak is called standalone.
+        # If called standalone, the caller should handle saving, or add:
+        # self.save(update_fields=['streak_days', 'last_activity_date'])
 
 class UserAchievement(models.Model):
     ACHIEVEMENT_TYPES = [
@@ -226,6 +308,13 @@ class NotificationPreference(models.Model):
     def __str__(self):
         return f"{self.user.username}'s notification preferences"
 
+class NotificationManager(models.Manager):
+    def get_unread_for_user(self, user):
+        return self.filter(user=user, read=False).order_by('-created_at') # Added ordering
+
+    def get_unsent_for_user(self, user):
+        return self.filter(user=user, sent=False).order_by('-created_at') # Added ordering
+
 class Notification(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications')
     type = models.CharField(max_length=20, choices=NotificationPreference.NOTIFICATION_TYPES)
@@ -243,6 +332,25 @@ class Notification(models.Model):
     def __str__(self):
         return f"{self.user.username} - {self.type}"
 
+    objects = NotificationManager() # Add the custom manager
+
+    def mark_as_read(self):
+        if not self.read:
+            self.read = True
+            self.save(update_fields=['read'])
+
+    def mark_as_sent(self):
+        if not self.sent:
+            self.sent = True
+            self.sent_at = timezone.now() # Ensure timezone is imported in models.py
+            self.save(update_fields=['sent', 'sent_at'])
+
+# Manager for WordOfTheDay
+class WordOfTheDayManager(models.Manager):
+    def get_today(self):
+        # timezone.now().date() ensures we are comparing date objects
+        return self.filter(date=timezone.now().date()).first()
+
 class WordOfTheDay(models.Model):
     word = models.CharField(max_length=100)
     translation = models.CharField(max_length=200)
@@ -255,4 +363,6 @@ class WordOfTheDay(models.Model):
         ordering = ['-date']
 
     def __str__(self):
-        return f"{self.word} - {self.date}" 
+        return f"{self.word} - {self.date}"
+
+    objects = WordOfTheDayManager() # Add the custom manager

@@ -4,18 +4,21 @@ from .models import Course, Lesson, VocabularyItem, GrammarRule, AudioTask, User
 class VocabularyItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = VocabularyItem
-        fields = '__all__'
+        fields = ['id', 'lesson', 'word', 'translation', 'example_sentence', 'pronunciation', 'created_at', 'updated_at']
 
 class GrammarRuleSerializer(serializers.ModelSerializer):
     class Meta:
         model = GrammarRule
-        fields = '__all__'
+        fields = ['id', 'lesson', 'title', 'explanation', 'examples', 'practice_exercises', 'created_at', 'updated_at']
 
 class AudioTaskSerializer(serializers.ModelSerializer):
     class Meta:
         model = AudioTask
-        fields = '__all__'
+        fields = ['id', 'lesson', 'title', 'audio_url', 'transcript', 'questions', 'created_at', 'updated_at']
 
+# Note: This serializer provides deep nesting of lesson items (vocabulary, grammar, audio).
+# For list views with many lessons, consider a shallower 'LessonSummarySerializer'
+# in the ViewSet to improve performance.
 class LessonSerializer(serializers.ModelSerializer):
     vocabulary_items = VocabularyItemSerializer(many=True, read_only=True)
     grammar_rules = GrammarRuleSerializer(many=True, read_only=True)
@@ -25,6 +28,9 @@ class LessonSerializer(serializers.ModelSerializer):
         model = Lesson
         fields = '__all__'
 
+# Note: This serializer provides deep nesting of lessons.
+# For list views with many courses, consider a shallower 'CourseSummarySerializer'
+# in the ViewSet to improve performance by avoiding serialization of all lessons.
 class CourseSerializer(serializers.ModelSerializer):
     lessons = LessonSerializer(many=True, read_only=True)
 
@@ -81,6 +87,9 @@ class LeaderboardEntrySerializer(serializers.ModelSerializer):
         model = UserXP
         fields = ['username', 'total_xp', 'level', 'streak_days', 'rank']
 
+    # Note: The get_rank() method issues a query for each user.
+    # If serializing a large list of users for a leaderboard, this can lead to N+1 queries.
+    # Consider annotating the rank onto the queryset in the ViewSet for better performance.
     def get_rank(self, obj):
         # Get the rank based on total_xp
         return UserXP.objects.filter(total_xp__gt=obj.total_xp).count() + 1

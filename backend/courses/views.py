@@ -10,7 +10,9 @@ from .serializers import (
     LessonRecommendationSerializer, NotificationPreferenceSerializer,
     NotificationSerializer, WordOfTheDaySerializer
 )
-import openai
+from .services import PronunciationService # Added for refactoring
+from .services import RecommendationService # Added for refactoring
+# import openai # Removed as OpenAI calls are now in PronunciationService
 from django.conf import settings
 import os
 from django.utils import timezone
@@ -41,13 +43,11 @@ class LessonViewSet(viewsets.ReadOnlyModelViewSet):
         progress, created = UserProgress.objects.get_or_create(
             user=user,
             lesson=lesson,
-            defaults={'completed': True, 'score': 100}
+            # Defaults are handled by the model's mark_as_complete or if UserProgress is newly created.
+            # If creating, we want it complete. If getting, mark_as_complete handles existing.
         )
         
-        if not created:
-            progress.completed = True
-            progress.score = 100
-            progress.save()
+        progress.mark_as_complete() # Use the new model method
         
         serializer = UserProgressSerializer(progress)
         return Response(serializer.data)
@@ -61,12 +61,20 @@ class LessonViewSet(viewsets.ReadOnlyModelViewSet):
         progress, created = UserProgress.objects.get_or_create(
             user=user,
             lesson=lesson,
-            defaults={'score': score}
+            # Defaults can be set if a new progress entry implies a certain score,
+            # otherwise, update_score will handle it.
+            # For get_or_create, if 'created' is true, 'progress' is a new object.
+            # We might want to initialize its score if 'score' isn't part of defaults or is 0.
+            # However, the current logic in update_score handles max(self.score, new_score).
+            defaults={'score': 0} # Initialize score to 0 if created, update_score will set it.
         )
         
-        if not created:
-            progress.score = max(progress.score, score)
-            progress.save()
+        try:
+            score_int = int(score) # Ensure score is an integer
+        except ValueError:
+            return Response({"error": "Invalid score format"}, status=status.HTTP_400_BAD_REQUEST)
+
+        progress.update_score(score_int) # Use the new model method
         
         serializer = UserProgressSerializer(progress)
         return Response(serializer.data)
@@ -109,48 +117,18 @@ class PronunciationAttemptViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         attempt = serializer.save(user=self.request.user)
         
-        # Process audio with Whisper API
-        try:
-            openai.api_key = settings.OPENAI_API_KEY
-            
-            # Transcribe audio using Whisper
-            with open(attempt.audio_file.path, 'rb') as audio_file:
-                transcription = openai.Audio.transcribe(
-                    model="whisper-1",
-                    file=audio_file,
-                    language="en"  # Adjust based on target language
-                )
-            
-            # Get feedback using GPT
-            feedback_prompt = f"""
-            Compare the pronunciation of "{attempt.exercise.word}" with the correct pronunciation "{attempt.exercise.correct_pronunciation}".
-            Provide specific feedback on:
-            1. Accuracy of pronunciation
-            2. Areas for improvement
-            3. Tips for better pronunciation
-            """
-            
-            feedback_response = openai.ChatCompletion.create(
-                model="gpt-4",
-                messages=[
-                    {"role": "system", "content": "You are a language pronunciation expert."},
-                    {"role": "user", "content": feedback_prompt}
-                ]
-            )
-            
-            # Calculate accuracy score (simplified version)
-            accuracy_score = 0.8  # This should be replaced with actual pronunciation comparison logic
-            
-            # Update attempt with results
-            attempt.transcription = transcription['text']
-            attempt.feedback = feedback_response.choices[0].message.content
-            attempt.accuracy_score = accuracy_score
-            attempt.save()
-            
-        except Exception as e:
-            # Handle errors appropriately
-            attempt.feedback = f"Error processing audio: {str(e)}"
-            attempt.save()
+        # Instantiate the service
+        pronunciation_service = PronunciationService()
+
+        # Call the service to process the attempt
+        # TODO: The language parameter should ideally be dynamic (e.g., from UserPreferences or Course settings)
+        pronunciation_service.process_pronunciation_attempt(attempt, language="en")
+
+        # The 'attempt' object is modified and saved by the PronunciationService,
+        # so no explicit save is needed here unless the service contract changes.
+        # If the service raised an exception that wasn't caught and handled by saving
+        # error details to the attempt, then the original serializer.save() result would persist.
+        # The current service implementation saves error details to the attempt object.
 
 class LeaderboardViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = LeaderboardEntrySerializer
@@ -183,37 +161,23 @@ class UserXPViewSet(viewsets.ReadOnlyModelViewSet):
 
     @action(detail=False, methods=['post'])
     def add_xp(self, request):
-        amount = request.data.get('amount', 0)
+        amount_str = request.data.get('amount', '0') # Get amount as string
+        try:
+            amount = int(amount_str) # Convert to integer
+            if amount < 0: # Optional: disallow negative XP amounts if that's a business rule
+                return Response({"error": "Amount cannot be negative"}, status=status.HTTP_400_BAD_REQUEST)
+        except ValueError:
+            return Response({"error": "Invalid amount provided"}, status=status.HTTP_400_BAD_REQUEST)
+
         user_xp, created = UserXP.objects.get_or_create(user=request.user)
+        # The UserXP.add_xp() method now handles achievement checks internally.
         user_xp.add_xp(amount)
-        
-        # Check for achievements
-        self._check_achievements(user_xp)
         
         serializer = self.get_serializer(user_xp)
         return Response(serializer.data)
 
-    def _check_achievements(self, user_xp):
-        # Check streak achievements
-        if user_xp.streak_days == 3:
-            self._award_achievement(user_xp, 'STREAK_3', 100)
-        elif user_xp.streak_days == 7:
-            self._award_achievement(user_xp, 'STREAK_7', 300)
-        elif user_xp.streak_days == 30:
-            self._award_achievement(user_xp, 'STREAK_30', 1000)
-
-        # Check level up achievement
-        if user_xp.level > 1:
-            self._award_achievement(user_xp, 'LEVEL_UP', 200)
-
-    def _award_achievement(self, user_xp, achievement_type, xp_reward):
-        achievement, created = UserAchievement.objects.get_or_create(
-            user=user_xp.user,
-            type=achievement_type,
-            defaults={'xp_reward': xp_reward}
-        )
-        if created:
-            user_xp.add_xp(xp_reward)
+    # _check_achievements method removed, logic moved to UserXP model.
+    # _award_achievement method removed, logic moved to UserXP model.
 
 class UserPreferencesViewSet(viewsets.ModelViewSet):
     serializer_class = UserPreferencesSerializer
@@ -232,39 +196,7 @@ class LessonRecommendationViewSet(viewsets.ReadOnlyModelViewSet):
     def get_queryset(self):
         return LessonRecommendation.objects.filter(user=self.request.user)
 
-    def _calculate_lesson_score(self, lesson, user_preferences, user_progress):
-        score = 0.0
-        reasons = []
-
-        # Level matching
-        if lesson.course.level == user_preferences.current_level:
-            score += 2.0
-            reasons.append("Matches your current level")
-
-        # Preferred lesson type
-        if lesson.type in user_preferences.preferred_lesson_types:
-            score += 1.5
-            reasons.append("Matches your preferred learning style")
-
-        # Weak areas
-        if any(area in lesson.title.lower() for area in user_preferences.weak_areas):
-            score += 2.0
-            reasons.append("Helps improve your weak areas")
-
-        # Progress-based scoring
-        completed_lessons = user_progress.filter(completed=True).count()
-        if completed_lessons > 0:
-            # Prioritize lessons that build upon completed ones
-            if lesson.order > completed_lessons:
-                score += 1.0
-                reasons.append("Builds upon your completed lessons")
-
-        # Learning goal alignment
-        if user_preferences.learning_goal.lower() in lesson.description.lower():
-            score += 1.5
-            reasons.append("Aligns with your learning goal")
-
-        return score, " | ".join(reasons)
+    # _calculate_lesson_score method removed, logic moved to RecommendationService
 
     @action(detail=False, methods=['get'])
     def generate_recommendations(self, request):
@@ -272,16 +204,19 @@ class LessonRecommendationViewSet(viewsets.ReadOnlyModelViewSet):
         preferences = UserPreferences.objects.get_or_create(user=user)[0]
         user_progress = UserProgress.objects.filter(user=user)
 
+        recommendation_service = RecommendationService() # Instantiate the service
+
         # Clear existing recommendations
         LessonRecommendation.objects.filter(user=user).delete()
 
         # Get all lessons
-        lessons = Lesson.objects.all()
+        lessons = Lesson.objects.all() # Consider filtering for active/relevant lessons
 
         # Calculate scores and create recommendations
         recommendations = []
         for lesson in lessons:
-            score, reason = self._calculate_lesson_score(lesson, preferences, user_progress)
+            # Call the service method
+            score, reason = recommendation_service.calculate_lesson_score(lesson, preferences, user_progress)
             if score > 0:
                 recommendations.append(
                     LessonRecommendation(
@@ -319,9 +254,8 @@ class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
     @action(detail=True, methods=['post'])
     def mark_as_read(self, request, pk=None):
         notification = self.get_object()
-        notification.read = True
-        notification.save()
-        return Response({'status': 'success'})
+        notification.mark_as_read() # Use the new model method
+        return Response({'status': 'success', 'message': 'Notification marked as read.'})
 
     @action(detail=False, methods=['post'])
     def mark_all_as_read(self, request):
@@ -333,4 +267,9 @@ class WordOfTheDayViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return WordOfTheDay.objects.filter(date=timezone.now().date()) 
+        # Use the new manager method to get today's word
+        today_word = WordOfTheDay.objects.get_today()
+        if today_word:
+            # Return a queryset containing only today's word, or an empty queryset
+            return WordOfTheDay.objects.filter(pk=today_word.pk)
+        return WordOfTheDay.objects.none()
