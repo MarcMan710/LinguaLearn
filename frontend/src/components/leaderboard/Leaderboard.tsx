@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { get } from '../../utils/api';
 
 interface LeaderboardEntry {
   username: string;
@@ -35,7 +35,7 @@ const Leaderboard: React.FC = () => {
 
   const fetchLeaderboard = async () => {
     try {
-      const response = await axios.get(`/api/leaderboard/?friends_only=${showFriendsOnly}`);
+      const response = await get(`/leaderboard/?friends_only=${showFriendsOnly}`);
       setEntries(response.data);
       setError(null);
     } catch (err) {
@@ -47,7 +47,7 @@ const Leaderboard: React.FC = () => {
 
   const fetchUserXP = async () => {
     try {
-      const response = await axios.get('/api/user-xp/');
+      const response = await get('/user-xp/');
       setUserXP(response.data[0]);
     } catch (err) {
       console.error('Error fetching user XP:', err);

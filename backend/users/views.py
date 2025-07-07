@@ -3,9 +3,9 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.views import APIView
 from django.contrib.auth import authenticate
-from rest_framework_simplejwt.tokens import RefreshToken
 from .models import UserProfile
 from .serializers import UserSerializer, UserProfileSerializer
+from .utils import get_tokens_for_user
 
 class RegisterView(generics.CreateAPIView):
     permission_classes = (AllowAny,)
@@ -25,11 +25,10 @@ class RegisterView(generics.CreateAPIView):
             daily_goal_minutes=request.data.get('daily_goal_minutes', 15)
         )
 
-        refresh = RefreshToken.for_user(user)
+        tokens = get_tokens_for_user(user)
         return Response({
             'user': serializer.data,
-            'refresh': str(refresh),
-            'access': str(refresh.access_token),
+            **tokens,
         }, status=status.HTTP_201_CREATED)
 
 class LoginView(APIView):
@@ -41,11 +40,8 @@ class LoginView(APIView):
         user = authenticate(username=username, password=password)
 
         if user:
-            refresh = RefreshToken.for_user(user)
-            return Response({
-                'refresh': str(refresh),
-                'access': str(refresh.access_token),
-            })
+            tokens = get_tokens_for_user(user)
+            return Response(tokens)
         return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
 
 class UserProfileView(generics.RetrieveUpdateAPIView):

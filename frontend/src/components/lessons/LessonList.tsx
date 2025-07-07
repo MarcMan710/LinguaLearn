@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import axios from 'axios';
+import { get } from '../../utils/api';
 
 interface Lesson {
   id: number;
@@ -20,12 +20,8 @@ const LessonList: React.FC = () => {
   useEffect(() => {
     const fetchLessons = async () => {
       try {
-        const token = localStorage.getItem('token');
-        const response = await axios.get(
-          `http://localhost:8000/api/courses/${courseId}/lessons/`,
-          {
-            headers: { Authorization: `Bearer ${token}` }
-          }
+        const response = await get(
+          `/courses/${courseId}/lessons/`
         );
         setLessons(response.data);
         setLoading(false);

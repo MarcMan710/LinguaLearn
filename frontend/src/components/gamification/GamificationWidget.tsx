@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import { get } from '../../utils/api';
 
 interface UserProfile {
   xp_points: number;
@@ -16,10 +16,7 @@ const GamificationWidget: React.FC = () => {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const token = localStorage.getItem('token');
-        const res = await axios.get('/api/users/profile/', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const res = await get('/users/profile/');
         setProfile(res.data);
       } catch (err) {
         setError('Failed to load gamification data.');

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import { get } from '../../utils/api';
 import { format, startOfWeek, addDays } from 'date-fns';
 
 interface ProgressStats {
@@ -31,14 +31,9 @@ const ProgressDashboard: React.FC = () => {
   useEffect(() => {
     const fetchProgress = async () => {
       try {
-        const token = localStorage.getItem('token');
         const [statsRes, lessonsRes] = await Promise.all([
-          axios.get('/api/users/progress/stats/', {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-          axios.get('/api/users/progress/completed-lessons/', {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
+          get('/users/progress/stats/'),
+          get('/users/progress/completed-lessons/'),
         ]);
         setStats(statsRes.data);
         setRecentLessons(lessonsRes.data);

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { get, put } from '../../utils/api';
 
 interface ProfileData {
   username: string;
@@ -53,10 +53,7 @@ const ProfileEdit: React.FC = () => {
 
   const fetchProfile = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const res = await axios.get('/api/users/profile/', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await get('/users/profile/');
       setProfile(res.data);
     } catch (err) {
       setError('Failed to load profile data.');
@@ -70,10 +67,7 @@ const ProfileEdit: React.FC = () => {
     if (!profile) return;
 
     try {
-      const token = localStorage.getItem('token');
-      await axios.put('/api/users/profile/', profile, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await put('/users/profile/', profile);
       setSuccess('Profile updated successfully!');
       setIsEditing(false);
       setTimeout(() => setSuccess(''), 3000);

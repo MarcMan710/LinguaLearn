@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { get } from '../../utils/api';
 
 interface Achievement {
   type: string;
@@ -59,7 +59,7 @@ const Achievements: React.FC = () => {
 
   const fetchUserXP = async () => {
     try {
-      const response = await axios.get('/api/user-xp/');
+      const response = await get('/user-xp/');
       setUserXP(response.data[0]);
       setError(null);
     } catch (err) {

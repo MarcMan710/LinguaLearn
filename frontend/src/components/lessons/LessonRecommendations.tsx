@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { get } from '../../utils/api';
 import { Link } from 'react-router-dom';
 
 interface Lesson {
@@ -32,7 +32,7 @@ const LessonRecommendations: React.FC = () => {
 
   const fetchRecommendations = async () => {
     try {
-      const response = await axios.get('/api/recommendations/generate_recommendations/');
+      const response = await get('/recommendations/generate_recommendations/');
       setRecommendations(response.data);
       setError(null);
     } catch (err) {

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import { get } from '../../utils/api';
 
 interface DailyProgress {
   daily_goal_minutes: number;
@@ -17,10 +17,7 @@ const DailyProgress: React.FC = () => {
   useEffect(() => {
     const fetchDailyProgress = async () => {
       try {
-        const token = localStorage.getItem('token');
-        const res = await axios.get('/api/users/progress/daily/', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const res = await get('/users/progress/daily/');
         setProgress(res.data);
       } catch (err) {
         setError('Failed to load daily progress.');

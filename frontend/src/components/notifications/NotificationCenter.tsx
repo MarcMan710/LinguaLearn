@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { get, post, patch } from '../../utils/api';
 
 interface Notification {
   id: number;
@@ -34,7 +34,7 @@ const NotificationCenter: React.FC = () => {
 
   const fetchNotifications = async () => {
     try {
-      const response = await axios.get('/api/notifications/');
+      const response = await get('/notifications/');
       setNotifications(response.data);
       setError(null);
     } catch (err) {
@@ -46,7 +46,7 @@ const NotificationCenter: React.FC = () => {
 
   const fetchPreferences = async () => {
     try {
-      const response = await axios.get('/api/notification-preferences/');
+      const response = await get('/notification-preferences/');
       setPreferences(response.data);
     } catch (err) {
       console.error('Error loading notification preferences:', err);
@@ -55,7 +55,7 @@ const NotificationCenter: React.FC = () => {
 
   const markAsRead = async (notificationId: number) => {
     try {
-      await axios.post(`/api/notifications/${notificationId}/mark_as_read/`);
+      await post(`/notifications/${notificationId}/mark_as_read/`);
       setNotifications(notifications.map(notification =>
         notification.id === notificationId
           ? { ...notification, read: true }
@@ -68,7 +68,7 @@ const NotificationCenter: React.FC = () => {
 
   const markAllAsRead = async () => {
     try {
-      await axios.post('/api/notifications/mark_all_as_read/');
+      await post('/notifications/mark_all_as_read/');
       setNotifications(notifications.map(notification => ({ ...notification, read: true })));
     } catch (err) {
       console.error('Error marking all notifications as read:', err);
@@ -77,7 +77,7 @@ const NotificationCenter: React.FC = () => {
 
   const updatePreferences = async (newPreferences: Partial<NotificationPreference>) => {
     try {
-      const response = await axios.patch('/api/notification-preferences/', newPreferences);
+      const response = await patch('/notification-preferences/', newPreferences);
       setPreferences(response.data);
     } catch (err) {
       console.error('Error updating notification preferences:', err);

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import axios from 'axios';
+import { post } from '../../utils/api';
 import InteractiveExercise from './InteractiveExercise';
 
 interface PronunciationExercise {
@@ -90,7 +90,7 @@ const PronunciationPractice: React.FC<PronunciationPracticeProps> = ({
       formData.append('audio_file', audioBlob, 'recording.wav');
       formData.append('exercise_id', exercise.id.toString());
 
-      const response = await axios.post('/api/pronunciation-attempts/', formData, {
+      const response = await post('/pronunciation-attempts/', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },

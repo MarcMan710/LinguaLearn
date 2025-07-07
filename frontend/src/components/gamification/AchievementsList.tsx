@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import { get } from '../../utils/api';
 
 interface Achievement {
   id: number;
@@ -17,10 +17,7 @@ const AchievementsList: React.FC = () => {
   useEffect(() => {
     const fetchAchievements = async () => {
       try {
-        const token = localStorage.getItem('token');
-        const res = await axios.get('/api/users/achievements/', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const res = await get('/users/achievements/');
         setAchievements(res.data);
       } catch (err) {
         setError('Failed to load achievements.');

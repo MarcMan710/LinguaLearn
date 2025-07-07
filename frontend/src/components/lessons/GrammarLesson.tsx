@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import axios from 'axios';
+import { get, post } from '../../utils/api';
 
 interface GrammarRule {
   id: number;
@@ -29,12 +29,8 @@ const GrammarLesson: React.FC = () => {
   useEffect(() => {
     const fetchLesson = async () => {
       try {
-        const token = localStorage.getItem('token');
-        const response = await axios.get(
-          `http://localhost:8000/api/lessons/${lessonId}/`,
-          {
-            headers: { Authorization: `Bearer ${token}` }
-          }
+        const response = await get(
+          `/lessons/${lessonId}/`
         );
         setLesson(response.data);
         setLoading(false);
@@ -70,13 +66,9 @@ const GrammarLesson: React.FC = () => {
 
   const handleComplete = async () => {
     try {
-      const token = localStorage.getItem('token');
-      await axios.post(
-        `http://localhost:8000/api/lessons/${lessonId}/complete/`,
-        {},
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
+      await post(
+        `/lessons/${lessonId}/complete/`,
+        {}
       );
       // Handle completion (e.g., show success message, redirect)
     } catch (err) {
