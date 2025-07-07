@@ -130,11 +130,11 @@ Before you begin, ensure you have the following installed:
 │   ├── backend/        # Django project configuration (settings.py, urls.py)
 │   ├── courses/        # Django app for courses, lessons, progress, etc.
 │   ├── users/          # Django app for user management (models, views)
-│   ├── media/          # For user-uploaded files (if configured)
+│   ├── media/          # For user-uploaded files
 │   ├── static/         # For static files (CSS, JS, images for Django templates)
-│   ├── venv/           # Python virtual environment (if created here)
+│   ├── venv/           # Python virtual environment
 │   ├── manage.py       # Django's command-line utility
-│   └── requirements.txt # Python dependencies (should be created)
+│   └── requirements.txt # Python dependencies 
 ├── frontend/           # React frontend application (Vite)
 │   ├── public/         # Static assets for the frontend
 │   ├── src/            # Frontend source code (components, pages, etc.)
@@ -150,4 +150,3 @@ Before you begin, ensure you have the following installed:
 ## License
 
 This project is licensed under the terms of the [LICENSE](./LICENSE) file.
-*(Assuming your `LICENSE` file is in the root. Adjust if it's named differently or located elsewhere).*
