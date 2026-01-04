@@ -1,0 +1,10 @@
+
+> lingualearn@0.0.0 dev
+> vite
+
+5:05:20 AM [vite] (client) Re-optimizing dependencies because lockfile has changed
+
+  VITE v6.3.5  ready in 514 ms
+
+  ➜  Local:   http://localhost:5173/
+  ➜  Network: use --host to expose
