@@ -159,7 +159,7 @@ class UserAchievement(models.Model):
         ('LEVEL_UP', 'Level Up'),
     ]
 
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='achievements')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='course_achievements')
     type = models.CharField(max_length=20, choices=ACHIEVEMENT_TYPES)
     xp_reward = models.PositiveIntegerField()
     created_at = models.DateTimeField(auto_now_add=True)
