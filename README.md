@@ -71,7 +71,6 @@ Before you begin, ensure you have the following installed:
         ```bash
         pip install -r requirements.txt
         ```
-        *(Note: A `requirements.txt` would be ideal. Currently, you might need to install packages like `django`, `djangorestframework`, `psycopg2-binary` (if using PostgreSQL), `openai`, `corsheaders`, `djangorestframework-simplejwt` manually or generate a `requirements.txt` using `pip freeze > requirements.txt` after installing them).*
     *   **Environment Variables:**
         Create a `.env` file in the `backend/` or `backend/backend/` directory (where `settings.py` can access it). Add your OpenAI API key:
         ```env
